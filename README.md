@@ -5,7 +5,7 @@ This library handles the connections and subscriptions and monitors the connecti
 ## Get started
 
 ```
-$ sudo pip3 install action-cable-zwei
+$ sudo pip3 install ActionCableZwei
 ```
 
 ## Example usage
