@@ -77,6 +77,6 @@ Create pull requests on Github and help us to improve this gem. There are some g
 
  * Follow the conventions
  * Test all your implementations
- * Document methods which aren't self-explaining (we are using [YARD](http://yardoc.org/))
+ * Document methods which aren't self-explaining
 
 Copyright (c) 2017 Tobias Feistmantl, MIT license
