@@ -31,7 +31,7 @@ def on_receive(message):
   print('New message arrived!')
   print('Action: {} | Data: {}'.format(message.action, message.data))
 
-subscription.on_receive(callback)
+subscription.on_receive(callback=on_receive)
 subscription.create()
 ```
 
