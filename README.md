@@ -63,7 +63,7 @@ Pull it up!
 
 ## You need help?
 
-Ask a question on [StackOverflow](https://stackoverflow.com/) with the tag 'action-cable-zwei'.
+Ask a question on [StackOverflow](https://stackoverflow.com/) with the tag 'actioncable-zwei'.
 
 ## Things to do
 
