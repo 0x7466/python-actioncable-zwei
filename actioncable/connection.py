@@ -23,6 +23,8 @@ class Connection:
     self.origin = origin
     self.log_ping = log_ping
 
+    self.logger = logging.getLogger('ActionCable Connection')
+
     self.state = 'disconnected'
     self.subscriptions = {}
 
@@ -30,7 +32,6 @@ class Connection:
     self.ws_thread = None
 
     self.monitor = ConnectionMonitor(self)
-    self.monitor.start()
 
   def __del__(self):
     if self.monitor is not None:
@@ -42,6 +43,8 @@ class Connection:
 
     :param origin: (Optional) The origin.
     """
+    self.logger.debug('Establish connection...')
+
     self.state = 'connect'
 
     if origin is not None:
@@ -53,24 +56,29 @@ class Connection:
     self.ws_thread = threading.Thread(name="APIConnectionThread_{}".format(uuid.uuid1()), target=self._run_forever)
     self.ws_thread.daemon = True
     self.ws_thread.start()
-
-
-    logging.debug('ACTIONCABLE CONNECTION : Connect...')
+    
+    if not self.monitor.started:
+      self.monitor.start()
 
   def disconnect(self):
     """
     Closes the connection.
     """
+    self.logger.debug('Close connection...')
+
     self.state = 'disconnect'
 
     self.ws.close()
-
-    logging.debug('ACTIONCABLE CONNECTION : Close connection...')
+    
+    if self.monitor.started:
+      self.monitor.stop()
 
   def reconnect(self):
     """
     Reconnect to server.
     """
+    self.logger.debug('Reconnect...')
+
     for subscription in self.subscriptions.values():
       if subscription.state == 'subscribed':
         subscription.state = 'connection_pending'
@@ -78,21 +86,22 @@ class Connection:
     self.connect()
 
   def _run_forever(self):
+    self.logger.debug('Run connection loop.')
     self.ws.run_forever(origin=self.origin)
 
   def send(self, data):
     """
     Sends data to the server.
     """
+    self.logger.debug('Send data: {}'.format(data))
     self.ws.send(json.dumps(data))
 
   def _on_open(self, ws):
     """
     Called when the connection is open.
     """
+    self.logger.debug('Connection established.')
     self.state = 'connected'
-
-    logging.debug('ACTIONCABLE CONNECTION : Connected.')
 
   def _on_message(self, ws, message):
     """
@@ -117,7 +126,7 @@ class Connection:
     if subscription is not None:
       subscription.received(data)
     elif message_type == 'welcome':
-      logging.debug('ACTIONCABLE : Welcome message received.')
+      self.logger.debug('Welcome message received.')
 
       for subscription in self.subscriptions.values():
         if subscription.state == 'connection_pending':
@@ -128,9 +137,9 @@ class Connection:
       self.monitor.last_ping = ping
 
       if self.log_ping:
-        logging.debug('ACTIONCABLE : Ping received.')
+        self.logger.debug('Ping received.')
     else:
-      logging.warning('ACTIONCABLE : Message not supported.')
+      self.logger.warning('Message not supported.')
 
   def _on_close(self, ws):
     """
@@ -143,9 +152,9 @@ class Connection:
 
 
     if self.state == 'uncontrolled_disconnected':
-      logging.warning('ACTIONCABLE CONNECTION : Uncontrolled Disconnected.')
+      self.logger.warning('Uncontrolled disconnected!')
     else:
-      logging.debug('ACTIONCABLE CONNECTION : Disconnected.')
+      self.logger.debug('Disconnected.')
 
     for subscription in self.subscriptions.values():
       if subscription.state == 'subscribed':
