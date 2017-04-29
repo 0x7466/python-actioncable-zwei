@@ -67,9 +67,6 @@ class ConnectionMonitor:
           if not self.last_ping.healthy:
             self.logger.warning('Connection ping unhealthy! Try to reconnect...')
             fix = True
-          elif self.connection.state == 'uncontrolled_disconnected':
-            self.logger.warning('Connection was not properly disconnected! Try to reconnect...')
-            fix = True
         else:
           if failure_rounds_since_last_fix_attempt >= 10:
             self.logger.warning('Connection still unhealthy! Try to reconnect...')
@@ -80,10 +77,10 @@ class ConnectionMonitor:
 
         if fix:
           self.connection_failed = True
-          self.connection.connect()
+          self.connection.reconnect()
 
         if self.connection_failed:
-          if self.connection.state == 'connected':
+          if self.connection.connected:
             self.logger.info('Connection fixed.')
             self.last_ping = Ping()
             self.connection_failed = False

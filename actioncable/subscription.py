@@ -34,7 +34,7 @@ class Subscription:
     """
     self.logger.debug('Create subscription on server...')
 
-    if self.connection.state != 'connected':
+    if not self.connection.connected:
       self.state = 'connection_pending'
       return
 

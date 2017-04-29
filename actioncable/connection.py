@@ -25,13 +25,18 @@ class Connection:
 
     self.logger = logging.getLogger('ActionCable Connection')
 
-    self.state = 'disconnected'
     self.subscriptions = {}
 
-    self.ws = None
+    self.monitor = ConnectionMonitor(self)
+
+    self.ws = websocket.WebSocketApp(self.url, on_message=self._on_message, on_close=self._on_close)
+    self.ws.on_open = self._on_open
+
     self.ws_thread = None
 
-    self.monitor = ConnectionMonitor(self)
+    if origin is not None:
+      self.origin = origin
+
 
   def __del__(self):
     if self.monitor is not None:
@@ -45,13 +50,18 @@ class Connection:
     """
     self.logger.debug('Establish connection...')
 
-    self.state = 'connect'
+    if self.connected:
+      self.logger.warn('Connection already established. Return...')
+      return
 
     if origin is not None:
       self.origin = origin
 
-    self.ws = websocket.WebSocketApp(self.url, on_message=self._on_message, on_close=self._on_close)
-    self.ws.on_open = self._on_open
+    # Small workaround for bug in websocket library.
+    # This property gets set at init of the instance
+    # but never reset after disconnect. So if you try
+    # to reconnect the connection gets closed immediately.
+    self.ws.keep_running = True
 
     self.ws_thread = threading.Thread(name="APIConnectionThread_{}".format(uuid.uuid1()), target=self._run_forever)
     self.ws_thread.daemon = True
@@ -60,17 +70,15 @@ class Connection:
     if not self.monitor.started:
       self.monitor.start()
 
-  def disconnect(self):
+  def disconnect(self, stop_monitor=True):
     """
     Closes the connection.
     """
     self.logger.debug('Close connection...')
 
-    self.state = 'disconnect'
-
     self.ws.close()
     
-    if self.monitor.started:
+    if stop_monitor and self.monitor.started:
       self.monitor.stop()
 
   def reconnect(self):
@@ -83,6 +91,12 @@ class Connection:
       if subscription.state == 'subscribed':
         subscription.state = 'connection_pending'
 
+    self.disconnect(stop_monitor=False)
+
+    while self.socket_present:
+      # Block until the socket is removed
+      pass
+
     self.connect()
 
   def _run_forever(self):
@@ -94,6 +108,11 @@ class Connection:
     Sends data to the server.
     """
     self.logger.debug('Send data: {}'.format(data))
+
+    if not self.connected:
+      self.logger.warn('Connection not established. Return...')
+      return
+
     self.ws.send(json.dumps(data))
 
   def _on_open(self, ws):
@@ -101,14 +120,12 @@ class Connection:
     Called when the connection is open.
     """
     self.logger.debug('Connection established.')
-    self.state = 'connected'
+
 
   def _on_message(self, ws, message):
     """
     Called aways when a message arrives.
     """
-    self.state = 'connected'
-
     data = json.loads(message)
     message_type = None
     identifier = None
@@ -145,21 +162,19 @@ class Connection:
     """
     Called when the connection was closed.
     """
-    if self.state == 'disconnect':
-      self.state = 'disconnected'
-    else:
-      self.state = 'uncontrolled_disconnected'
-
-
-    if self.state == 'uncontrolled_disconnected':
-      self.logger.warning('Uncontrolled disconnected!')
-    else:
-      self.logger.debug('Disconnected.')
+    self.logger.debug('Connection closed.')
 
     for subscription in self.subscriptions.values():
       if subscription.state == 'subscribed':
         subscription.state = 'connection_pending'
 
+  @property
+  def socket_present(self):
+    return self.ws.sock is not None
+
+  @property
+  def connected(self):
+    return self.ws.sock is not None and self.ws.sock.connected
 
   def find_subscription(self, identifier):
     for subscription in self.subscriptions.values():
