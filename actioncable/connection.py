@@ -3,6 +3,7 @@ import threading
 import uuid
 import json
 import logging
+import time
 
 from .monitor import ConnectionMonitor
 from .ping import Ping
@@ -42,7 +43,7 @@ class Connection:
     if self.monitor is not None:
       self.monitor.stop()
 
-  def connect(self, origin=None):
+  def connect(self, origin=None, force=False):
     """
     Connects to the server.
 
@@ -50,7 +51,15 @@ class Connection:
     """
     self.logger.debug('Establish connection...')
 
-    if self.connected:
+    if force:
+      self.logger.info('Force connection establishment!')
+      if self.socket_present:
+        try:
+          self.ws.sock.close()
+        except:
+          pass
+      self.ws.sock = None
+    elif self.connected:
       self.logger.warn('Connection already established. Return...')
       return
 
@@ -93,11 +102,14 @@ class Connection:
 
     self.disconnect(stop_monitor=False)
 
+    count = 0
     while self.socket_present:
-      # Block until the socket is removed
-      pass
+      if count >= 10:
+        break
+      count += 1
+      time.sleep(.1)
 
-    self.connect()
+    self.connect(force=self.socket_present)
 
   def _run_forever(self):
     self.logger.debug('Run connection loop.')
