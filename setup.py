@@ -8,7 +8,7 @@ setup(
     description='Action Cable Client for Python 3',
     author='Tobias Feistmantl',
     author_email='tobias@myhome-automations.com',
-    url='https://github.com/MyHomeAutomations/python-actioncable-zwei',
+    url='https://github.com/tobiasfeistmantl/python-actioncable-zwei',
     packages=find_packages(),
     install_requires=['websocket-client']
 )
