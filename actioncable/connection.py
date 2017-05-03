@@ -25,16 +25,15 @@ class Connection:
 
     self.subscriptions = {}
 
-    self.ws = websocket.WebSocketApp(self.url, on_message=self._on_message, on_close=self._on_close)
-    self.ws.on_open = self._on_open
-    self.auto_reconnect = False
-
+    self.ws = None
     self.ws_thread = None
+
+    self.auto_reconnect = False
 
     if origin is not None:
       self.origin = origin
 
-  def connect(self, origin=None, force=False):
+  def connect(self, origin=None):
     """
     Connects to the server.
 
@@ -42,26 +41,12 @@ class Connection:
     """
     self.logger.debug('Establish connection...')
 
-    if force:
-      self.logger.info('Force connection establishment!')
-      if self.socket_present:
-        try:
-          self.ws.sock.close()
-        except:
-          pass
-      self.ws.sock = None
-    elif self.connected:
+    if self.connected:
       self.logger.warn('Connection already established. Return...')
       return
 
     if origin is not None:
       self.origin = origin
-
-    # Small workaround for bug in websocket library.
-    # This property gets set at init of the instance
-    # but never reset after disconnect. So if you try
-    # to reconnect the connection gets closed immediately.
-    self.ws.keep_running = True
 
     self.auto_reconnect = True
 
@@ -76,13 +61,20 @@ class Connection:
     self.logger.debug('Close connection...')
 
     self.auto_reconnect = False
-    self.ws.close()
+    
+    if self.ws is not None:
+      self.ws.close()
 
   def _run_forever(self):
     while self.auto_reconnect:
       try:
         self.logger.debug('Run connection loop.')
+        
+        self.ws = websocket.WebSocketApp(self.url, on_message=self._on_message, on_close=self._on_close)
+        self.ws.on_open = self._on_open
+        
         self.ws.run_forever(ping_interval=5, ping_timeout=3, origin=self.origin)
+        time.sleep(2)
       except Exception as e:
         self.logger.error('Connection loop raised exception. Exception: {}'.format(e))
 
@@ -150,11 +142,11 @@ class Connection:
 
   @property
   def socket_present(self):
-    return self.ws.sock is not None
+    return self.ws is not None and self.ws.sock is not None
 
   @property
   def connected(self):
-    return self.ws.sock is not None and self.ws.sock.connected
+    return self.ws is not None and self.ws.sock is not None and self.ws.sock.connected
 
   def find_subscription(self, identifier):
     for subscription in self.subscriptions.values():
