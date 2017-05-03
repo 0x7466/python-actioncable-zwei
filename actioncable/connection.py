@@ -5,9 +5,6 @@ import json
 import logging
 import time
 
-from .monitor import ConnectionMonitor
-from .ping import Ping
-
 
 class Connection:
   """
@@ -28,20 +25,14 @@ class Connection:
 
     self.subscriptions = {}
 
-    self.monitor = ConnectionMonitor(self)
-
     self.ws = websocket.WebSocketApp(self.url, on_message=self._on_message, on_close=self._on_close)
     self.ws.on_open = self._on_open
+    self.auto_reconnect = False
 
     self.ws_thread = None
 
     if origin is not None:
       self.origin = origin
-
-
-  def __del__(self):
-    if self.monitor is not None:
-      self.monitor.stop()
 
   def connect(self, origin=None, force=False):
     """
@@ -72,48 +63,28 @@ class Connection:
     # to reconnect the connection gets closed immediately.
     self.ws.keep_running = True
 
+    self.auto_reconnect = True
+
     self.ws_thread = threading.Thread(name="APIConnectionThread_{}".format(uuid.uuid1()), target=self._run_forever)
     self.ws_thread.daemon = True
     self.ws_thread.start()
-    
-    if not self.monitor.started:
-      self.monitor.start()
 
-  def disconnect(self, stop_monitor=True):
+  def disconnect(self):
     """
     Closes the connection.
     """
     self.logger.debug('Close connection...')
 
+    self.auto_reconnect = False
     self.ws.close()
-    
-    if stop_monitor and self.monitor.started:
-      self.monitor.stop()
-
-  def reconnect(self):
-    """
-    Reconnect to server.
-    """
-    self.logger.debug('Reconnect...')
-
-    for subscription in self.subscriptions.values():
-      if subscription.state == 'subscribed':
-        subscription.state = 'connection_pending'
-
-    self.disconnect(stop_monitor=False)
-
-    count = 0
-    while self.socket_present:
-      if count >= 10:
-        break
-      count += 1
-      time.sleep(.1)
-
-    self.connect(force=self.socket_present)
 
   def _run_forever(self):
-    self.logger.debug('Run connection loop.')
-    self.ws.run_forever(origin=self.origin)
+    while self.auto_reconnect:
+      try:
+        self.logger.debug('Run connection loop.')
+        self.ws.run_forever(ping_interval=5, ping_timeout=3, origin=self.origin)
+      except Exception as e:
+        self.logger.error('Connection loop raised exception. Exception: {}'.format(e))
 
   def send(self, data):
     """
@@ -162,9 +133,6 @@ class Connection:
           subscription.create()
 
     elif message_type == 'ping':
-      ping = Ping()
-      self.monitor.last_ping = ping
-
       if self.log_ping:
         self.logger.debug('Ping received.')
     else:
