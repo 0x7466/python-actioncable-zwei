@@ -25,7 +25,7 @@ connection.connect()
 ```python
 from actioncable.subscription import Subscription
 
-subscription = Subscription(connection, channel_name='AppChannel', identifier={'additional': 'params'})  # You don't have to provide the channel name in the identifier param.
+subscription = Subscription(connection, channel_name=, identifier={'identifier': 'AppChannel'})  # You don't have to provide the channel name in the identifier param.
 
 def on_receive(message):
   print('New message arrived!')

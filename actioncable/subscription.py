@@ -7,16 +7,14 @@ class Subscription:
   """
   Subscriptions on a server.
   """
-  def __init__(self, connection, channel_name, identifier={}):
+  def __init__(self, connection, identifier={}):
     """
     :param connection: The connection which is used to subscribe.
-    :param channel_name: The channel name.
     :param identifier: (Optional) Additional identifier information.
     """
     self.uuid = str(uuid.uuid1())
 
     self.connection = connection
-    self.channel_name = channel_name
     self.identifier = identifier
     
     self.receive_callback = None
@@ -24,7 +22,7 @@ class Subscription:
     self.state = 'unsubcribed'
     self.message_queue = []
 
-    self.logger = logging.getLogger('ActionCable Subscription ({})'.format(channel_name))
+    self.logger = logging.getLogger('ActionCable Subscription ({})'.format(self.identifier))
 
     self.connection.subscriptions[self.uuid] = self
 
@@ -140,6 +138,4 @@ class Subscription:
     self.message_queue = []
 
   def _identifier_string(self):
-    identifier = self.identifier
-    identifier['channel'] = self.channel_name
-    return json.dumps(identifier)
+    return json.dumps(self.identifier)

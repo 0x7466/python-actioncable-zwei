@@ -128,7 +128,7 @@ class Connection:
       if self.log_ping:
         self.logger.debug('Ping received.')
     else:
-      self.logger.warning('Message not supported.')
+      self.logger.warning('Message not supported. (Message: {})'.format(message))
 
   def _on_close(self, ws):
     """
