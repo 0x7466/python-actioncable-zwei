@@ -18,7 +18,7 @@ class Subscription:
     self.connection = connection
     self.channel_name = channel_name
     self.identifier = identifier
-    self.identifier['channel'] = channel_name
+    
     self.receive_callback = None
 
     self.state = 'unsubcribed'
@@ -140,4 +140,6 @@ class Subscription:
     self.message_queue = []
 
   def _identifier_string(self):
-    return json.dumps(self.identifier)
+    identifier = self.identifier
+    identifier['channel'] = self.channel_name
+    return json.dumps(identifier)
