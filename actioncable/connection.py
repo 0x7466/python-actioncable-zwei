@@ -14,16 +14,19 @@ class Connection:
     """
     The connection to a websocket server
     """
-    def __init__(self, url, origin=None, log_ping=False):
+    def __init__(self, url, origin=None, log_ping=False, cookie=None):
         """
         :param url: The url of the cable server.
         :param origin: (Optional) The origin.
         :param log_ping: (Default: False) If true every
                                             ping gets logged.
+        :param cookie: (Optional) A cookie to send (used for
+                                            authentication for instance).
         """
         self.url = url
         self.origin = origin
         self.log_ping = log_ping
+        self.cookie = cookie
 
         self.logger = logging.getLogger('ActionCable Connection')
 
@@ -67,7 +70,7 @@ class Connection:
         self.logger.debug('Close connection...')
 
         self.auto_reconnect = False
-        
+
         if self.websocket is not None:
             self.websocket.close()
 
@@ -75,13 +78,14 @@ class Connection:
         while self.auto_reconnect:
             try:
                 self.logger.debug('Run connection loop.')
-                
+
                 self.websocket = websocket.WebSocketApp(
                     self.url,
+                    cookie=self.cookie,
                     on_message=self._on_message,
                     on_close=self._on_close)
                 self.websocket.on_open = self._on_open
-                
+
                 self.websocket.run_forever(ping_interval=5, ping_timeout=3, origin=self.origin)
                 time.sleep(2)
             except Exception as exc:
