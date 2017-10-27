@@ -28,7 +28,7 @@ class Connection:
         self.origin = origin
         self.log_ping = log_ping
         self.cookie = cookie
-        self.header = header if header is not None else []
+        self.header = header
 
         self.logger = logging.getLogger('ActionCable Connection')
 
