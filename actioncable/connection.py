@@ -14,7 +14,7 @@ class Connection:
     """
     The connection to a websocket server
     """
-    def __init__(self, url, origin=None, log_ping=False, cookie=None):
+    def __init__(self, url, origin=None, log_ping=False, cookie=None, header=None):
         """
         :param url: The url of the cable server.
         :param origin: (Optional) The origin.
@@ -22,11 +22,13 @@ class Connection:
                                             ping gets logged.
         :param cookie: (Optional) A cookie to send (used for
                                             authentication for instance).
+        :param header: (Optional) custom header for websocket handshake.
         """
         self.url = url
         self.origin = origin
         self.log_ping = log_ping
         self.cookie = cookie
+        self.header = header if header is not None else []
 
         self.logger = logging.getLogger('ActionCable Connection')
 
@@ -82,6 +84,7 @@ class Connection:
                 self.websocket = websocket.WebSocketApp(
                     self.url,
                     cookie=self.cookie,
+                    header=self.header,
                     on_message=self._on_message,
                     on_close=self._on_close)
                 self.websocket.on_open = self._on_open
