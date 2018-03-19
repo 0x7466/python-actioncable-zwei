@@ -67,7 +67,7 @@ Ask a question on [StackOverflow](https://stackoverflow.com/) with the tag 'acti
 
 ## Things to do
 
- * **To test the gem.**
+ * **To test the package.**
 
 Also here we would be thankful for pull requests.
 
