@@ -9,7 +9,6 @@ import logging
 import time
 import websocket
 
-
 class Connection:
     """
     The connection to a websocket server
@@ -85,11 +84,13 @@ class Connection:
                     self.url,
                     cookie=self.cookie,
                     header=self.header,
-                    on_message=self._on_message,
-                    on_close=self._on_close)
-                self.websocket.on_open = self._on_open
+                    on_message=lambda socket, message: self._on_message(socket, message),
+                    on_close=lambda socket: self._on_close(socket)
+                )
+                self.websocket.on_open = lambda socket: self._on_open(socket)
 
                 self.websocket.run_forever(ping_interval=5, ping_timeout=3, origin=self.origin)
+
                 time.sleep(2)
             except Exception as exc:
                 self.logger.error('Connection loop raised exception. Exception: %s', exc)
