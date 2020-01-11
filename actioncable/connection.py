@@ -107,14 +107,14 @@ class Connection:
 
         self.websocket.send(json.dumps(data))
 
-    def _on_open(self, socket):
+    def _on_open(self):
         """
         Called when the connection is open.
         """
         self.logger.debug('Connection established.')
 
 
-    def _on_message(self, socket, message):
+    def _on_message(self, message):
         """
         Called aways when a message arrives.
         """
