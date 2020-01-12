@@ -147,7 +147,7 @@ class Connection:
         else:
             self.logger.warning('Message not supported. (Message: {})'.format(message))
 
-    def _on_close(self, socket):
+    def _on_close(self):
         """
         Called when the connection was closed.
         """
