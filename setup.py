@@ -10,5 +10,5 @@ setup(
     author_email='tobias@myhome-automations.com',
     url='https://github.com/tobiasfeistmantl/python-actioncable-zwei',
     packages=find_packages(),
-    install_requires=['websocket-client']
+    install_requires=['websocket-client>=1.1.0']
 )
