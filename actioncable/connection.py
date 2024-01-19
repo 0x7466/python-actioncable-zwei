@@ -9,11 +9,12 @@ import logging
 import time
 import websocket
 
+
 class Connection:
     """
     The connection to a websocket server
     """
-    def __init__(self, url, origin=None, log_ping=False, cookie=None, header=None):
+    def __init__(self, url, origin=None, log_ping=False, cookie=None, header=None, send_pong=False):
         """
         :param url: The url of the cable server.
         :param origin: (Optional) The origin.
@@ -28,6 +29,7 @@ class Connection:
         self.log_ping = log_ping
         self.cookie = cookie
         self.header = header
+        self.send_pong = send_pong
 
         self.logger = logging.getLogger('ActionCable Connection')
 
@@ -146,6 +148,8 @@ class Connection:
         elif message_type == 'ping':
             if self.log_ping:
                 self.logger.debug('Ping received.')
+            if self.send_pong:
+                self.send({'command': 'pong'})
         else:
             self.logger.warning('Message not supported. (Message: {})'.format(message))
 
